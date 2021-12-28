@@ -1,3 +1,6 @@
+# Copa+
+This release presents the source code used for the user-space implementation in our INFOCOM'22 paper: "Copa+: Analysis and Improvement of the delay-based congestion control algorithm Copa"
+
 # genericCC
 
 An interface to program congestion control protocols transmitted sent
@@ -5,12 +8,12 @@ over UDP. It comes with a clean TrafficGenerator interface that can
 generate traffic for each of these various protocols. Also supports
 other congestion control protocols (refer Information section below)
 
-The current version implements Copa, Remy, Kernel CC (Cubic on linux),
+The current version implements Copa+, Copa, Remy, Kernel CC (Cubic on linux),
 UDT's TCP AIMD implementation and PCC (deprecated). The traffic can be
 either deterministic or poisson on-off where on period can be
 specified in seconds or bytes.
 
-Note: transport for Copa, Remy and AIMD is not reliable whereas Kernel
+Note: transport for Copa/Copa+, Remy and AIMD is not reliable whereas Kernel
 TCP (run using iperf) is reliable. None of these are capable of
 transporting data yet, though such a version is in development in the
 'full\_tcp' branch.
@@ -45,19 +48,20 @@ options are also specified here.
 ### Congestion Control
 
 The congestion control algorithm is chosen using the
-'cctype=[remy|markovian|kernel|tcp]'. 'markovian' denotes Copa,
+'cctype=[remy|markovian|kernel|tcp|adc]'. 'markovian' denotes Copa,
+'adc' denotes Copa+,
 'kernel' denotes the kernel's default tcp run using iperf and tcp
 denotes a simple AIMD algorithm. If no algorithm is specified, Remy is
 used by default. If Remy is used, the rat file should be specified
-using 'if=filepath'. The delta configuration for markovian can be
+using 'if=filepath'. The delta configuration for markovian and adc can be
 specified using 'delta_conf'. For instance
-'delta_conf=constant_delta:1' will make Copa use a constant delta of
+'delta_conf=constant_delta:1' will make Copa/Copa+ use a constant delta of
 1.0.
 
 Various variants of Adaptive Copa can be specified. For instance
 'bounded_delay_end:100 will bound the end-to-end delay to
 100ms. Similarly 'bounded_percentile_delay_end' can also be used,
-which will bound the 95th percentile of end-to-end delay. Copa, Remy
+which will bound the 95th percentile of end-to-end delay. Copa/Copa+, Remy
 and AIMD TCP expect a 'MIN_RTT' environment variable to give an
 estimate in ms (only Copa uses this value though). If this value is
 not known, a sufficiently large value can be given and the sender will
@@ -143,12 +147,12 @@ Running on Mahimahi (see [mahimahi.mit.edu](http://mahimahi.mit.edu))
 
 `sudo sysctl -w net.ipv4.ip_forward=1`
 
-Start two nested mahimahi shells emulating a 12Mbps link with a 100ms
+Start two nested mahimahi shells emulating a 12Mbps link with a 20ms
 delay as follows (assuming you have the relevant trace file, for
 12Mbps, it is just a text file containing the single ascii character
 '1'):
 
-`mm-delay 50 mm-link trace-12Mbps trace-12Mbps`
+`mm-delay 10 mm-link trace-12Mbps trace-12Mbps`
 
 Find the ip addresses inside and outside the mahimahi shell by running
 `ifconfig` inside and outside the shell resp. Inside the shell look for an
@@ -156,12 +160,22 @@ Find the ip addresses inside and outside the mahimahi shell by running
 instance they could be '100.64.0.1' and '100.64.0.4' resp. The external address
 is also available in the variable `MAHIMAHI_BASE`. Run `./receiver` outside the
 mahimahi shells. Run the following command inside the shells to start a sender
-that uses Adaptive Copa that bounds end-to-end delay to 110ms. It will transmit
-in 10s bunches. You can run several such sender processes in parallel, but
-running more than n-1 senders (where n is the number of available cores) is not
+that uses Copa+. It will transmit a long-term flow with 60s.
+
+`./sender serverip=$MAHIMAHI_BASE offduration=0 onduration=60000
+cctype=adc delta_conf=do_ss:auto:0.5
+traffic_params=deterministic,num_cycles=1`
+
+You can run several such sender processes in parallel (via runing `send_parallel_ADC.sh [numbers of parallel sender]`),
+but running more than n-1 senders (where n is the number of available cores) is not
 recommended, especially for protocols that could be potentially pacing sensitive
 such as Remy.
 
-`./sender serverip=$MAHIMAHI_BASE offduration=0 onduration=60000
-cctype=markovian delta_conf=do_ss:auto:0.5
-traffic_params=deterministic,num_cycles=1`
+You also can emulate the real network link via mahimahi. 
+First the network trace files in mahimahi trace format are required.
+We referenced the cellular network traces from https://github.com/Soheil-ab/Cellular-Traces-NYC in `celluar_trace\`.
+E.g., to test Copa+ under the cellular network, you can simply run `celluarADC.sh` 
+(Make sure that run `./receiver` firstly out of the mahimahi shell`
+
+
+
