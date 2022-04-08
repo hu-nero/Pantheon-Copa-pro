@@ -1,3 +1,6 @@
+#ifndef RTT_WINDOW
+#define RTT_WINDOW
+
 #include <deque>
 #include <tuple>
 
@@ -48,3 +51,5 @@ class RTTWindow {
   double get_latest_rtt() const;
   bool is_copa() const;
 };
+
+#endif
