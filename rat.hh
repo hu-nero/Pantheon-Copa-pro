@@ -30,6 +30,13 @@ private:
 
 public:
   Rat( WhiskerTree & s_whiskers, const bool s_track=false );
+  // 复制构造函数，标记为 non-constexpr
+  Rat(const Rat& other) : _whiskers(other._whiskers), _memory(other._memory), _packets_sent(other._packets_sent),
+    _packets_received(other._packets_received), _track(other._track), _last_send_time(other._last_send_time),
+    _the_window(other._the_window), _intersend_time(other._intersend_time), _flow_id(other._flow_id),
+    _largest_ack(other._largest_ack) {
+        // 进行复制操作，根据需要深拷贝或其他操作
+    }
 
   void packets_received( const std::vector< Packet > & packets, const double link_rate_normalizing_factor );
   void reset( const double & tickno ); /* start new flow */

@@ -50,6 +50,13 @@ public:
   void round( void );
 
   bool operator==( const Whisker & other ) const { return (_window_increment == other._window_increment) && (_window_multiple == other._window_multiple) && (_intersend == other._intersend) && (_domain == other._domain); }
+  // 赋值操作符
+  Whisker& operator=(const Whisker& other) {
+      if (this != &other) { // 避免自我赋值
+                            // 进行赋值操作
+      }
+      return *this;
+  }
 
   friend size_t hash_value( const Whisker & whisker );
 
