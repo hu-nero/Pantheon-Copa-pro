@@ -8,6 +8,7 @@
 #include "markoviancc.hh"
 #include "traffic-generator.hh"
 #include "ADC.hh"
+#include "ADC_pro.hh"
 
 // see configs.hh for details
 double TRAINING_LINK_RATE = 4000000.0/1500.0;
@@ -29,7 +30,7 @@ int main( int argc, char *argv[] ) {
 	// length of packet train for estimating bottleneck bandwidth
 	int train_length = 1;
 
-	enum CCType { REMYCC, TCPCC, KERNELCC, PCC, NASHCC, MARKOVIANCC, ADC } cctype = REMYCC;
+	enum CCType { REMYCC, TCPCC, KERNELCC, PCC, NASHCC, MARKOVIANCC, ADC, MARKOVIANCC_PRO } cctype = REMYCC;
 
 	for ( int i = 1; i < argc; i++ ) {
 		std::string arg( argv[ i ] );
@@ -98,6 +99,8 @@ int main( int argc, char *argv[] ) {
 				cctype = CCType::MARKOVIANCC;
             else if (cctype_str == "adc")
 				cctype = CCType::ADC;
+            else if (cctype_str == "adc-pro")
+				cctype = CCType::MARKOVIANCC_PRO;
 			else
 				fprintf( stderr, "Unrecognised congestion control protocol '%s'.\n", cctype_str.c_str() );
 		}
@@ -164,6 +167,15 @@ int main( int argc, char *argv[] ) {
 		congctrl.interpret_config_str(delta_conf);
 		CTCP< AdaptiveCC > connection( congctrl, serverip, serverport, sourceport, train_length );
 		TrafficGenerator< CTCP< AdaptiveCC > > traffic_generator( connection, onduration, offduration, traffic_params );
+		traffic_generator.spawn_senders( 1 );
+	}
+    else if ( cctype == CCType::MARKOVIANCC_PRO ){
+		fprintf( stdout, "Using Adaptive Copa-pro.\n");
+		AdaptiveProCC congctrl(1.0);
+		assert(delta_conf != "");
+		congctrl.interpret_config_str(delta_conf);
+		CTCP< AdaptiveProCC > connection( congctrl, serverip, serverport, sourceport, train_length );
+		TrafficGenerator< CTCP< AdaptiveProCC > > traffic_generator( connection, onduration, offduration, traffic_params );
 		traffic_generator.spawn_senders( 1 );
 	}
 	else{
